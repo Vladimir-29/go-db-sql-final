@@ -47,20 +47,18 @@ func TestAddGetDelete(t *testing.T) {
 	// get
 	// получите только что добавленную посылку, убедитесь в отсутствии ошибки
 	// проверьте, что значения всех полей в полученном объекте совпадают со значениями полей в переменной parcel
+	parcel.Number = number
 	stored, err := store.Get(number)
 	require.NoError(t, err)
-	assert.Equal(t, parcel.Client, stored.Client)
-	assert.Equal(t, parcel.Status, stored.Status)
-	assert.Equal(t, parcel.Address, stored.Address)
-	assert.Equal(t, parcel.CreatedAt, stored.CreatedAt)
+	assert.Equal(t, parcel, stored)
 	// delete
 	// удалите добавленную посылку, убедитесь в отсутствии ошибки
 	// проверьте, что посылку больше нельзя получить из БД
 	err = store.Delete(number)
 	require.NoError(t, err)
 
-	empty, err := store.Get(number)
-	assert.Empty(t, empty)
+	_, err = store.Get(number)
+	assert.Error(t, err)
 }
 
 // TestSetAddress проверяет обновление адреса
@@ -135,7 +133,6 @@ func TestGetByClient(t *testing.T) {
 		getTestParcel(),
 		getTestParcel(),
 	}
-	parcelMap := map[int]Parcel{}
 
 	// задаём всем посылкам один и тот же идентификатор клиента
 	client := randRange.Intn(10_000_000)
@@ -151,9 +148,6 @@ func TestGetByClient(t *testing.T) {
 		require.NotEmpty(t, number)
 		// обновляем идентификатор добавленной у посылки
 		parcels[i].Number = number
-
-		// сохраняем добавленную посылку в структуру map, чтобы её можно было легко достать по идентификатору посылки
-		parcelMap[number] = parcels[i]
 	}
 
 	// get by client
@@ -165,13 +159,8 @@ func TestGetByClient(t *testing.T) {
 	// убедитесь, что количество полученных посылок совпадает с количеством добавленных
 
 	// check
-	for _, parcel := range storedParcels {
-		// в parcelMap лежат добавленные посылки, ключ - идентификатор посылки, значение - сама посылка
-		// убедитесь, что все посылки из storedParcels есть в parcelMap
-		// убедитесь, что значения полей полученных посылок заполнены верно
-		number := parcel.Number
-		assert.NotEqual(t, 0, parcelMap[number])
-		assert.Equal(t, parcelMap[number], parcel)
-
-	}
+	// в parcelMap лежат добавленные посылки, ключ - идентификатор посылки, значение - сама посылка
+	// убедитесь, что все посылки из storedParcels есть в parcelMap
+	// убедитесь, что значения полей полученных посылок заполнены верно
+	assert.ElementsMatch(t, parcels, storedParcels)
 }
